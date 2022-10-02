@@ -4,9 +4,13 @@ TODO
 
 ## Requirements
 1. Python 3
-2. PySerial module (see Usage section)
+2. PIP3
 
 ## Usage
+1. Install `virtualenv` module:
+   ```bash
+   pip3 install virtualenv
+   ```
 1. Create virtual environment:
    ```bash
    python3 -m virtualenv venv
@@ -23,9 +27,15 @@ TODO
    ```bash
    pip3 install -r requirements.txt
    ```
-1. Run the exporter
+1. Run the exporter:
    ```bash
-   python3 main.py
+   uvicorn main:app
+   ```
+   It will be available on port `8000`. Click [here](http://localhost:8000/docs) if you want to see available API specification.
+
+   *NOTE: If you want to run the exporter in watch mode (useful for development add `--reload` flag to the above command):*
+   ```bash
+   uvicorn main:app --reload
    ```
 
 ## A few useful commands the detector module understands
