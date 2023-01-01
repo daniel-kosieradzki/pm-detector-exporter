@@ -5,15 +5,24 @@ from fastapi import FastAPI
 from model.measurement import Measurement
 from threading import Thread
 
-SERIAL_PORT_DEVICE_FILE = "/dev/tty.usbserial-14210"
+SERIAL_PORT_DEVICE_FILE = "/dev/tty.usbserial-14430"
 SERIAL_PORT_BUFFER_SIZE = 50
 
 
 def initialize_app() -> None:
+  global current_measurement
+  current_measurement = None
   logging.basicConfig(level=logging.INFO)
 
+
+def measurement_ready_callback(m: Measurement) -> None:
+  global current_measurement
+  # logging.info(m)
+  current_measurement = m
+
+
 def _start_scrapping_sensor_data() -> None:
-  sdp = SensorDataProcessor()
+  sdp = SensorDataProcessor(measurement_ready_callback = measurement_ready_callback)
 
   with serial.Serial(SERIAL_PORT_DEVICE_FILE, 115200) as serial_port:
     # Stop realtime measurements sending mode
@@ -42,26 +51,28 @@ def start_api() -> None:
   app = FastAPI()
 
 
-class SensorDataProcessor:
-  def __init__(self) -> None:
+class SensorDataProcessor():
+  def __init__(self, **kwargs) -> None:
     self.message_buffer = bytearray([])
+    self.measurement_ready_callback = kwargs.get("measurement_ready_callback", None)
 
     self.left_curly_brace_count = 0
     self.right_curly_brace_count = 0
 
 
-  def _print_message(self, message: str) -> None:
-    message_object = json.loads(message)
-    if message_object["res"] == "4":
-      m = Measurement(message_object)
-      logging.info(m.to_json())
-    else:
-      logging.info(message)
-
-
   def process_message(self) -> None:
     message = self.message_buffer.decode("utf8")
-    self._print_message(message)
+    try:
+      m = Measurement(message)
+      # logging.info(m)
+      logging.info(m.to_json())
+
+      if self.measurement_ready_callback is not None:
+        logging.debug("Passing measurement message to callback function...")
+        self.measurement_ready_callback(m)
+    except:
+      logging.info(message)
+
 
 
   def process_message_portion(self, message_portion: bytes) -> None:
@@ -95,4 +106,11 @@ def check_health():
   #TODO: Implement some real checks like checking whether serial port has been opened successfully
   return {"status_code": 0, "message": "OK"}
 
-# @app.get("api/v1/measurements")
+
+@app.get("/api/v1/measurements")
+def get_measurements():
+  # Translate current_measurement to some API-specific reponse object
+  if current_measurement is not None:
+    return current_measurement.as_dict()
+  else:
+    return {}
