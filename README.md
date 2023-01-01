@@ -33,7 +33,7 @@ TODO
    ```
    It will be available on port `8000`. Click [here](http://localhost:8000/docs) if you want to see available API specification.
 
-   *NOTE: If you want to run the exporter in watch mode (useful for development add `--reload` flag to the above command):*
+   *NOTE: If you want to run the exporter in watch mode (useful for development) add `--reload` flag to the above command:*
    ```bash
    uvicorn main:app --reload
    ```
